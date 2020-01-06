@@ -1,6 +1,7 @@
 import isEmpty from "lodash/isEmpty"
 import mapKeys from "lodash/mapKeys"
 import mapValues from "lodash/mapValues"
+import { mergeMongoQueries } from "./utils"
 
 export const searchNumeric = (fieldName, fieldValue) => {
     return { [fieldName]: mapKeys(fieldValue, (_, k) => k.replace("_", "$")) }
@@ -38,6 +39,8 @@ const _stringOperator = ([op, val]) => {
             return { $in: val }
         case "_nin":
             return { $nin: val }
+        default:
+            throw Error(`Invalid string operation: ${op}`)
     }
 }
 
@@ -51,49 +54,38 @@ export const searchString = (fieldName, fieldValue) => {
     }
 }
 
-// extends the given key if already present, set otherwise
-const _extendKey = (obj, key, arr) => {
-    obj[key] = key in obj ? [...obj[key], ...arr] : arr
-}
-
 export const searchWhereRecursive = (searchParams, searchFunc) => {
     if (!searchParams) {
         return {}
     }
 
-    const ret = searchFunc(searchParams)
+    const queries = [searchFunc(searchParams)]
 
     // handle special mongodb operators
     if ("_or" in searchParams) {
-        _extendKey(
-            ret,
-            "$or",
-            searchParams["_or"].map((v) => searchWhereRecursive(v, searchFunc))
-        )
+        queries.push({
+            $or: searchParams["_or"].map((v) => searchWhereRecursive(v, searchFunc)),
+        })
     }
 
     if ("_and" in searchParams) {
-        _extendKey(
-            ret,
-            "$and",
-            searchParams["_and"].map((v) => searchWhereRecursive(v, searchFunc))
-        )
+        queries.push({
+            $and: searchParams["_and"].map((v) => searchWhereRecursive(v, searchFunc)),
+        })
     }
 
     // $not is not a mongodb top level operator, need to wrap with $and
     if ("_not" in searchParams) {
-        _extendKey(
-            ret,
-            "$and",
-            searchParams["_not"].map((v) => {
+        queries.push({
+            $and: searchParams["_not"].map((v) => {
                 const notValue = searchWhereRecursive(v, searchFunc)
                 // wrap with $not
                 return mapValues(notValue, (v) => ({
                     $not: v,
                 }))
-            })
-        )
+            }),
+        })
     }
 
-    return ret
+    return mergeMongoQueries(...queries)
 }

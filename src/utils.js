@@ -1,13 +1,10 @@
-// import zip from "lodash/zip"
-
-// // improved tagged template literal that supports nested gql`` objects
-// export const combineGql = (strings, exprs) => {
-//     // flatten exprs into strings
-//     exprs = exprs.map((expr) => ("loc" in expr ? expr.loc.source : expr))
-
-//     return zip(strings, exprs).join("")
-// }
+import { inspect } from "util"
 import gql from "graphql-tag"
+
+// node doesnt pretty print by default :(
+export const pprint = (obj) => {
+    console.log(inspect(obj, { colors: true, depth: null }))
+}
 
 // inserts the global typedefs before user defined SDL
 export const createTypedefs = (s) => {
@@ -78,4 +75,25 @@ export const createTypedefs = (s) => {
         ${globalTypedefs}
         ${s}
     `
+}
+
+// merges fragments of mongo search params to prevent overriding of $and
+export const mergeMongoQueries = (...queries) => {
+    const ands = []
+    const rests = []
+
+    queries.forEach(({ $and: andCond, ...rest } = {}) => {
+        if (andCond) {
+            ands.push(andCond)
+        }
+
+        rests.push(rest)
+    })
+
+    const ret = Object.assign({}, ...rests)
+    if (ands.length) {
+        ret["$and"] = [].concat(...ands)
+    }
+
+    return ret
 }

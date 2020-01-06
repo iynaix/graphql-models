@@ -3,6 +3,7 @@ import isEmpty from "lodash/isEmpty"
 
 import { types, filters } from "./types"
 import { searchBoolean, searchNumeric, searchString, searchWhereRecursive } from "./search"
+import { mergeMongoQueries } from "./utils"
 
 // generates graphql schema boilerplate for enum
 export const enumType = (name, values) => `enum ${name} {
@@ -127,7 +128,7 @@ const _getSearchFunc = ({ type, filterType }) => {
 }
 
 // returns a function that creates the mongodb parameters for filtering
-const createMongoFilter = (fieldDefinitions = {}) => (whereParams) => {
+export const createMongoFilter = (fieldDefinitions = {}) => (whereParams) => {
     const searchResults = Object.entries(fieldDefinitions).map(
         ([fieldName, { createFilter = true, filterFunc, ...field }]) => {
             const fieldValue = whereParams[fieldName]
@@ -143,7 +144,7 @@ const createMongoFilter = (fieldDefinitions = {}) => (whereParams) => {
         }
     )
 
-    return Object.assign({}, ...searchResults)
+    return mergeMongoQueries(...searchResults)
 }
 
 // creates the mongodb parameters for sorting

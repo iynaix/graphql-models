@@ -1,7 +1,7 @@
 import isEmpty from "lodash/isEmpty"
 import mapKeys from "lodash/mapKeys"
 import mapValues from "lodash/mapValues"
-import { mergeMongoQueries } from "./utils"
+import { mergeMongoQueries, pprint } from "./utils"
 
 export const searchNumeric = (fieldName, fieldValue) => {
     return { [fieldName]: mapKeys(fieldValue, (_, k) => k.replace("_", "$")) }
@@ -59,31 +59,33 @@ export const searchWhereRecursive = (searchParams, searchFunc) => {
         return {}
     }
 
-    const queries = [searchFunc(searchParams)]
+    const { _or, _and, _not, ...rest } = searchParams
+    const queries = [searchFunc(rest)]
 
     // handle special mongodb operators
-    if ("_or" in searchParams) {
+    if (!isEmpty(_or)) {
         queries.push({
-            $or: searchParams["_or"].map((v) => searchWhereRecursive(v, searchFunc)),
+            $or: _or.map((v) => searchWhereRecursive(v, searchFunc)),
         })
     }
 
-    if ("_and" in searchParams) {
+    if (!isEmpty(_and)) {
         queries.push({
-            $and: searchParams["_and"].map((v) => searchWhereRecursive(v, searchFunc)),
+            $and: _and.map((v) => searchWhereRecursive(v, searchFunc)),
         })
     }
 
     // $not is not a mongodb top level operator, need to wrap with $and
-    if ("_not" in searchParams) {
+    if (!isEmpty(_not)) {
         queries.push({
-            $and: searchParams["_not"].map((v) => {
-                const notValue = searchWhereRecursive(v, searchFunc)
-                // wrap with $not
-                return mapValues(notValue, (v) => ({
-                    $not: v,
-                }))
-            }),
+            $and: _not.map(({ _not: innerNot = [], ...other }) =>
+                mergeMongoQueries(
+                    // handle recursive _not first
+                    ...innerNot.map((v) => searchWhereRecursive(v, searchFunc)),
+                    // wrap remaining keys with $not
+                    mapValues(other, (v) => ({ $not: v }))
+                )
+            ),
         })
     }
 

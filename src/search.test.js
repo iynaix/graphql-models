@@ -90,7 +90,7 @@ describe("complex queries", () => {
         }
         const searchFunc = createMongoFilter(multiFields)
 
-        expect(searchWhereRecursive(where, searchFunc)).toBe(0)
+        expect(searchWhereRecursive(where, searchFunc)).toMatchSnapshot()
     })
 
     test("recursive _not search", () => {
@@ -103,6 +103,6 @@ describe("complex queries", () => {
         }
         const searchFunc = createMongoFilter(multiFields)
 
-        expect(searchWhereRecursive(where, searchFunc)).toBe(0)
+        expect(searchWhereRecursive(where, searchFunc)).toMatchSnapshot()
     })
 })

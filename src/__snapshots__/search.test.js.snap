@@ -17,6 +17,85 @@ Object {
 }
 `;
 
+exports[`complex queries nested _and search 1`] = `
+Object {
+  "$and": Array [
+    Object {
+      "$and": Array [
+        Object {
+          "a": Object {
+            "$eq": "1",
+          },
+        },
+        Object {
+          "$and": Array [
+            Object {
+              "b": Object {
+                "$eq": "2",
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`complex queries nested _not search 1`] = `
+Object {
+  "$nor": Array [
+    Object {
+      "$and": Array [
+        Object {
+          "a": Object {
+            "$eq": "1",
+          },
+        },
+      ],
+      "$nor": Array [
+        Object {
+          "$and": Array [
+            Object {
+              "b": Object {
+                "$eq": "2",
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`complex queries nested _or search 1`] = `
+Object {
+  "$or": Array [
+    Object {
+      "$and": Array [
+        Object {
+          "a": Object {
+            "$eq": "1",
+          },
+        },
+      ],
+      "$or": Array [
+        Object {
+          "$and": Array [
+            Object {
+              "b": Object {
+                "$eq": "2",
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`complex queries non-recursive _and search 1`] = `
 Object {
   "$and": Array [
@@ -44,20 +123,24 @@ Object {
 
 exports[`complex queries non-recursive _not search 1`] = `
 Object {
-  "$and": Array [
+  "$nor": Array [
     Object {
-      "a": Object {
-        "$not": Object {
-          "_eq": "1",
+      "$and": Array [
+        Object {
+          "a": Object {
+            "$eq": "1",
+          },
         },
-      },
+      ],
     },
     Object {
-      "b": Object {
-        "$not": Object {
-          "_eq": "2",
+      "$and": Array [
+        Object {
+          "b": Object {
+            "$eq": "2",
+          },
         },
-      },
+      ],
     },
   ],
 }
@@ -137,21 +220,7 @@ Object {
 
 exports[`complex queries recursive _not search 1`] = `
 Object {
-  "$and": Array [
-    Object {
-      "a": Object {
-        "$not": Object {
-          "_eq": "1",
-        },
-      },
-    },
-    Object {
-      "b": Object {
-        "$not": Object {
-          "_eq": "2",
-        },
-      },
-    },
+  "$nor": Array [
     Object {
       "$and": Array [
         Object {
@@ -159,10 +228,36 @@ Object {
             "$eq": "1",
           },
         },
+      ],
+    },
+    Object {
+      "$and": Array [
         Object {
           "b": Object {
             "$eq": "2",
           },
+        },
+      ],
+    },
+    Object {
+      "$nor": Array [
+        Object {
+          "$and": Array [
+            Object {
+              "a": Object {
+                "$eq": "1",
+              },
+            },
+          ],
+        },
+        Object {
+          "$and": Array [
+            Object {
+              "b": Object {
+                "$eq": "2",
+              },
+            },
+          ],
         },
       ],
     },

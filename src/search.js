@@ -1,6 +1,5 @@
 import isEmpty from "lodash/isEmpty"
 import mapKeys from "lodash/mapKeys"
-import mapValues from "lodash/mapValues"
 import { mergeMongoQueries, pprint } from "./utils"
 
 export const searchNumeric = (fieldName, fieldValue) => {
@@ -78,14 +77,7 @@ export const searchWhereRecursive = (searchParams, searchFunc) => {
     // $not is not a mongodb top level operator, need to wrap with $and
     if (!isEmpty(_not)) {
         queries.push({
-            $and: _not.map(({ _not: innerNot = [], ...other }) =>
-                mergeMongoQueries(
-                    // handle recursive _not first
-                    ...innerNot.map((v) => searchWhereRecursive(v, searchFunc)),
-                    // wrap remaining keys with $not
-                    mapValues(other, (v) => ({ $not: v }))
-                )
-            ),
+            $nor: _not.map((v) => searchWhereRecursive(v, searchFunc)),
         })
     }
 

@@ -1,9 +1,15 @@
 import { inspect } from "util"
+
+import isString from "lodash/isString"
 import gql from "graphql-tag"
 
 // node doesnt pretty print by default :(
-export const pprint = (obj) => {
-    console.log(inspect(obj, { colors: true, depth: null }))
+export const pprint = (...objs) => {
+    console.log(
+        objs
+            .map((obj) => (isString(obj) ? obj : inspect(obj, { colors: true, depth: null })))
+            .join("\n")
+    )
 }
 
 // inserts the global typedefs before user defined SDL

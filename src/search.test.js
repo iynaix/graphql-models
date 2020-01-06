@@ -21,6 +21,11 @@ describe("searchString", () => {
     })
 })
 
+const multiFields = {
+    a: { type: "String" },
+    b: { type: "String" },
+}
+
 describe("complex queries", () => {
     test("empty field searches should do nothing", () => {
         const fields = { a: { type: "String" } }
@@ -28,11 +33,6 @@ describe("complex queries", () => {
 
         expect(createMongoFilter(fields)(where)).toStrictEqual({})
     })
-
-    const multiFields = {
-        a: { type: "String" },
-        b: { type: "String" },
-    }
 
     test("multiple string searches should not override $and", () => {
         const where = { a: { _eq: "1" }, b: { _eq: "2" } }
@@ -43,6 +43,15 @@ describe("complex queries", () => {
     test("non-recursive _or search", () => {
         const where = {
             _or: [{ a: { _eq: "1" } }, { b: { _eq: "2" } }],
+        }
+        const searchFunc = createMongoFilter(multiFields)
+
+        expect(searchWhereRecursive(where, searchFunc)).toMatchSnapshot()
+    })
+
+    test("nested _or search", () => {
+        const where = {
+            _or: [{ a: { _eq: "1" }, _or: [{ b: { _eq: "2" } }] }],
         }
         const searchFunc = createMongoFilter(multiFields)
 
@@ -71,6 +80,15 @@ describe("complex queries", () => {
         expect(searchWhereRecursive(where, searchFunc)).toMatchSnapshot()
     })
 
+    test("nested _and search", () => {
+        const where = {
+            _and: [{ a: { _eq: "1" }, _and: [{ b: { _eq: "2" } }] }],
+        }
+        const searchFunc = createMongoFilter(multiFields)
+
+        expect(searchWhereRecursive(where, searchFunc)).toMatchSnapshot()
+    })
+
     test("recursive _and search", () => {
         const where = {
             _and: [
@@ -87,6 +105,15 @@ describe("complex queries", () => {
     test("non-recursive _not search", () => {
         const where = {
             _not: [{ a: { _eq: "1" } }, { b: { _eq: "2" } }],
+        }
+        const searchFunc = createMongoFilter(multiFields)
+
+        expect(searchWhereRecursive(where, searchFunc)).toMatchSnapshot()
+    })
+
+    test("nested _not search", () => {
+        const where = {
+            _not: [{ a: { _eq: "1" }, _not: [{ b: { _eq: "2" } }] }],
         }
         const searchFunc = createMongoFilter(multiFields)
 

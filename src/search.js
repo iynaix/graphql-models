@@ -2,13 +2,8 @@ import isEmpty from "lodash/isEmpty"
 import mapKeys from "lodash/mapKeys"
 import mapValues from "lodash/mapValues"
 
-export const searchNumeric = (searchParams, fieldName) => {
-    const params = searchParams[fieldName]
-    if (isEmpty(params)) {
-        return {}
-    }
-
-    return { [fieldName]: mapKeys(params, (_, k) => k.replace("_", "$")) }
+export const searchNumeric = (fieldName, fieldValue) => {
+    return { [fieldName]: mapKeys(fieldValue, (_, k) => k.replace("_", "$")) }
 }
 
 // searchNumeric is just a superset of searchBoolean!
@@ -46,16 +41,12 @@ const _stringOperator = ([op, val]) => {
     }
 }
 
-export const searchString = (whereParams, field) => {
-    if (isEmpty(whereParams[field])) {
-        return {}
-    }
-
-    const mongoParams = Object.entries(whereParams[field]).map(_stringOperator)
+export const searchString = (fieldName, fieldValue) => {
+    const mongoParams = Object.entries(fieldValue).map(_stringOperator)
 
     return {
         $and: mongoParams.map((v) => ({
-            [field]: v,
+            [fieldName]: v,
         })),
     }
 }

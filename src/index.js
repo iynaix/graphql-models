@@ -103,36 +103,43 @@ const createQuerySDL = (modelName, queryName, queryParameters) => {
     }`
 }
 
+const _getSearchFunc = ({ type, filterType }) => {
+    if (!filterType) {
+        filterType = `${type}Filter`
+    }
+
+    if (filterType === filters.IDFilter) {
+        if (type === types.Int) {
+            return searchNumeric
+        } else if (type === types.String) {
+            return searchString
+        }
+    } else if (filterType === filters.IntFilter || filterType === filters.FloatFilter) {
+        return searchNumeric
+    } else if (filterType === filters.BooleanFilter) {
+        return searchBoolean
+    } else if (filterType === filters.StringFilter || filterType === filters.EnumFilter) {
+        return searchString
+    } else {
+        console.warn("UNHANDLED FILTER: ", { type, filterType })
+        return () => undefined
+    }
+}
+
 // returns a function that creates the mongodb parameters for filtering
 const createMongoFilter = (fieldDefinitions = {}) => (whereParams) => {
-    const searchResults = []
-
-    Object.entries(fieldDefinitions).forEach(
-        ([fieldName, { type, createFilter = true, filterType }]) => {
-            if (createFilter) {
-                if (!filterType) {
-                    filterType = `${type}Filter`
-                }
-
-                if (filterType === filters.IDFilter) {
-                    if (type === types.Int) {
-                        searchResults.push(searchNumeric(whereParams, fieldName))
-                    } else if (type === types.String) {
-                        searchResults.push(searchString(whereParams, fieldName))
-                    }
-                } else if (filterType === filters.IntFilter || filterType === filters.FloatFilter) {
-                    searchResults.push(searchNumeric(whereParams, fieldName))
-                } else if (filterType === filters.BooleanFilter) {
-                    searchResults.push(searchBoolean(whereParams, fieldName))
-                } else if (
-                    filterType === filters.StringFilter ||
-                    filterType === filters.EnumFilter
-                ) {
-                    searchResults.push(searchString(whereParams, fieldName))
-                } else {
-                    console.error("UNHANDLED FILTER: ", { type, filterType })
-                }
+    const searchResults = Object.entries(fieldDefinitions).map(
+        ([fieldName, { createFilter = true, filterFunc, ...field }]) => {
+            const fieldValue = whereParams[fieldName]
+            if (isEmpty(fieldValue)) {
+                return
             }
+
+            if (filterFunc) {
+                return filterFunc(fieldName, fieldValue)
+            }
+
+            return createFilter ? _getSearchFunc(field)(fieldName, fieldValue) : undefined
         }
     )
 
@@ -161,7 +168,6 @@ a field has shape: {
     required = false,
     schemaDoc,
     filterType,
-    , // mongodb field name, if different from model field name
     createFilter = true,
     createOrderBy = true,
 }

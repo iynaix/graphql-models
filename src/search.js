@@ -1,6 +1,6 @@
 import isEmpty from "lodash/isEmpty"
 import mapKeys from "lodash/mapKeys"
-import { mergeMongoQueries, pprint } from "./utils"
+import { mergeMongoQueries } from "./utils"
 
 export const searchNumeric = (fieldName, fieldValue) => {
     return { [fieldName]: mapKeys(fieldValue, (_, k) => k.replace("_", "$")) }

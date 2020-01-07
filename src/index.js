@@ -3,7 +3,7 @@ import isEmpty from "lodash/isEmpty"
 
 import { types, filters } from "./types"
 import { searchBoolean, searchNumeric, searchString, searchWhereRecursive } from "./search"
-import { mergeMongoQueries } from "./utils"
+import { mergeMongoQueries, pprint } from "./utils"
 
 // generates graphql schema boilerplate for enum
 export const enumType = (name, values) => `enum ${name} {
@@ -90,6 +90,11 @@ const createQuerySDL = (modelName, queryName, queryParameters) => {
 
     let extraParams = ""
     if (queryParameters) {
+        // _debug parameter for easier debugging
+        if (process.env.NODE_ENV !== "production") {
+            queryParameters["_debug"] = "Boolean"
+        }
+
         extraParams = Object.entries(queryParameters)
             .map(([k, v]) => `${k}: ${v}`)
             .join("\n")
@@ -191,11 +196,25 @@ export const createModel = (
 }
 
 // creates the search parameters to be passed into mongo's aggregate()
-export const createMongoResolver = (searchParams, fieldDefinitions, defaultSort = {}) => {
+export const createMongoResolver = (
+    { _debug = false, ...searchParams },
+    fieldDefinitions,
+    defaultSort = {}
+) => {
     const mongoSort = createMongoSort(searchParams["orderBy"], fieldDefinitions)
 
-    return [
+    const ret = [
         searchWhereRecursive(searchParams["where"], createMongoFilter(fieldDefinitions)),
         isEmpty(mongoSort) ? defaultSort : mongoSort,
     ]
+
+    if (_debug) {
+        console.log("Search:")
+        pprint(ret[0])
+
+        console.log("\nSort:")
+        pprint(ret[1])
+    }
+
+    return ret
 }

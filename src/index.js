@@ -2,7 +2,7 @@ import get from "lodash/get"
 import isEmpty from "lodash/isEmpty"
 import mapValues from "lodash/mapValues"
 
-import { types, filters } from "./types"
+import { filters } from "./types"
 import { searchBoolean, searchNumeric, searchString, searchWhereRecursive } from "./search"
 import { mergeMongoQueries, pprint } from "./utils"
 
@@ -137,17 +137,19 @@ const createQuerySDL = (modelName, queryName, queryParameters) => {
 }
 
 const _getSearchFunc = ({ type, filterType }) => {
-    if (filterType === filters.IDFilter) {
-        if (type === types.Int) {
-            return searchNumeric
-        } else if (type === types.String) {
-            return searchString
-        }
-    } else if (filterType === filters.IntFilter || filterType === filters.FloatFilter) {
+    if (
+        filterType === filters.IntFilter ||
+        filterType === filters.FloatFilter ||
+        filterType === filters.IntMembershipFilter
+    ) {
         return searchNumeric
     } else if (filterType === filters.BooleanFilter) {
         return searchBoolean
-    } else if (filterType === filters.StringFilter || filterType.endsWith("EnumFilter")) {
+    } else if (
+        filterType === filters.StringFilter ||
+        filterType.endsWith("EnumFilter") ||
+        filterType === filters.StringMembershipFilter
+    ) {
         return searchString
     } else {
         console.warn("UNHANDLED FILTER: ", { type, filterType })

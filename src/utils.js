@@ -31,8 +31,8 @@ export const createTypedefs = (s) => {
             _ne: Boolean
         }
 
-        # more restrictive IntFilter as some operations do not make sense for ids
-        input IDFilter {
+        # only allow for equality and list checks
+        input IntMembershipFilter {
             _eq: Int
             _ne: Int
             _in: [Int!]
@@ -72,6 +72,14 @@ export const createTypedefs = (s) => {
             _iendswith: String
             _regex: String
             _iregex: String
+            _in: [String!]
+            _nin: [String!]
+        }
+
+        # only allow for equality and list checks
+        input StringMembershipFilter {
+            _eq: String
+            _ne: String
             _in: [String!]
             _nin: [String!]
         }

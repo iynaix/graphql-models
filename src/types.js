@@ -30,9 +30,10 @@ export const types = {
 
 export const filters = {
     IntFilter: "IntFilter",
-    IDFilter: "IDFilter",
+    IntMembershipFilter: "IntMembershipFilter",
     EnumFilter: "EnumFilter",
     FloatFilter: "FloatFilter",
     StringFilter: "StringFilter",
+    StringMembershipFilter: "StringMembershipFilter",
     BooleanFilter: "BooleanFilter",
 }

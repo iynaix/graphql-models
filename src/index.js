@@ -34,13 +34,18 @@ const getFilterType = ({ type, enumValues, filterType }) => {
 }
 
 const processFields = (fieldDefinitions) =>
-    mapValues(fieldDefinitions, (field, fieldName) => {
+    mapValues(fieldDefinitions, ({ createFilter, ...field }, fieldName) => {
         if (!field.type) {
-            throw `${fieldName} has no type specified.`
+            throw `"${fieldName}" has no type specified.`
+        }
+
+        if (!createFilter) {
+            return { createFilter, ...field }
         }
 
         return {
             ...field,
+            createFilter,
             filterType: getFilterType(field),
         }
     })
@@ -49,7 +54,7 @@ export const createModelSDL = (modelName, fieldDefinitions) => {
     const enums = []
 
     const modelFields = Object.entries(fieldDefinitions).map(
-        ([fieldName, { type, required = false, schemaDoc, enumValues }]) => {
+        ([fieldName, { type, required, schemaDoc, enumValues }]) => {
             // create enumValues as needed
             if (enumValues && enumValues.length) {
                 enums.push(enumType(type, enumValues))
@@ -70,7 +75,7 @@ const createWhereSDL = (queryName, fieldDefinitions) => {
     const queryWhere = []
 
     Object.entries(fieldDefinitions).forEach(
-        ([fieldName, { type, schemaDoc, createFilter = true, filterType }]) => {
+        ([fieldName, { type, schemaDoc, createFilter, filterType }]) => {
             if (createFilter) {
                 schemaDoc = `${schemaDoc ? `# ${schemaDoc}\n` : ""}`
 
@@ -93,7 +98,7 @@ const createWhereSDL = (queryName, fieldDefinitions) => {
 
 const createOrderBySDL = (queryName, fieldDefinitions) => {
     const queryOrderBy = []
-    Object.entries(fieldDefinitions).forEach(([fieldName, { schemaDoc, createOrderBy = true }]) => {
+    Object.entries(fieldDefinitions).forEach(([fieldName, { schemaDoc, createOrderBy }]) => {
         if (createOrderBy) {
             schemaDoc = `${schemaDoc ? `# ${schemaDoc}\n` : ""}`
             queryOrderBy.push(`${schemaDoc}${fieldName}: OrderBy`)
@@ -153,7 +158,7 @@ const _getSearchFunc = ({ type, filterType }) => {
 // returns a function that creates the mongodb parameters for filtering
 export const createMongoFilter = (fieldDefinitions = {}) => (whereParams) => {
     const searchResults = Object.entries(fieldDefinitions).map(
-        ([fieldName, { createFilter = true, filterFunc, ...field }]) => {
+        ([fieldName, { createFilter, filterFunc, ...field }]) => {
             const fieldValue = whereParams[fieldName]
             if (isEmpty(fieldValue)) {
                 return
@@ -204,6 +209,7 @@ export const createModel = (
     { queryParameters } = {}
 ) => {
     fieldDefinitions = processFields(fieldDefinitions)
+    pprint(fieldDefinitions)
 
     const modelSDL = createModelSDL(modelName, fieldDefinitions)
     const whereSDL = createWhereSDL(queryName, fieldDefinitions)

@@ -1,34 +1,29 @@
 // types
 
-const field = (type) => ({
-    required = true,
-    schemaDoc,
-    filterType,
-    createFilter = true,
-    createOrdeBy = true,
-    ...other
-} = {}) => ({
-    type,
-    required,
-    schemaDoc,
-    filterType,
-    createFilter,
-    createOrdeBy,
-    ...other,
-})
+const fieldDefaults = {
+    required: true,
+    createFilter: true,
+    createOrderBy: true,
+}
 
 export const types = {
-    Int: field("Int"),
-    Float: field("Float"),
-    String: field("String"),
-    Boolean: field("Boolean"),
-    Enum: (elementType, enumValues = [], other) => {
+    Int: (opts) => ({ ...fieldDefaults, type: "Int", ...opts }),
+    Float: (opts) => ({ ...fieldDefaults, type: "Float", ...opts }),
+    String: (opts) => ({ ...fieldDefaults, type: "String", ...opts }),
+    Boolean: (opts) => ({ ...fieldDefaults, type: "Boolean", ...opts }),
+    Enum: (elementType, enumValues = [], opts) => {
         if (!enumValues.length) {
             throw Error(`enum values must be provided for ${elementType}`)
         }
-        return field(elementType)({ enumValues, ...other })
+        return { ...fieldDefaults, type: elementType, enumValues, ...opts }
     },
-    List: (elementType, other) => field(`[${elementType}]`)(other),
+    List: (elementType, { createFilter = false, createOrderBy = false, ...opts }) => ({
+        ...fieldDefaults,
+        type: `[${elementType}]`,
+        createFilter,
+        createOrderBy,
+        ...opts,
+    }),
 }
 
 // filters

@@ -46,14 +46,21 @@ const processFields = (fieldDefinitions) =>
     })
 
 export const createModelSDL = (modelName, fieldDefinitions) => {
+    const enums = []
+
     const modelFields = Object.entries(fieldDefinitions).map(
-        ([fieldName, { type, required = false, schemaDoc }]) => {
+        ([fieldName, { type, required = false, schemaDoc, enumValues }]) => {
+            // create enumValues as needed
+            if (enumValues && enumValues.length) {
+                enums.push(enumType(type, enumValues))
+            }
+
             schemaDoc = `${schemaDoc ? `# ${schemaDoc}\n` : ""}`
             return `${schemaDoc}${fieldName}: ${type}${required ? "!" : ""}`
         }
     )
 
-    return `type ${modelName} {
+    return `${enums.join("\n")}\ntype ${modelName} {
         ${modelFields.join("\n")}
     }`
 }

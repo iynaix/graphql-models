@@ -1,5 +1,6 @@
 import get from "lodash/get"
 import isEmpty from "lodash/isEmpty"
+import mapValues from "lodash/mapValues"
 
 import { types, filters } from "./types"
 import { searchBoolean, searchNumeric, searchString, searchWhereRecursive } from "./search"
@@ -20,13 +21,29 @@ const enumFilterType = (name, type) => `input ${name} {
 // generates graphql schema boilerplate for recursive query
 export const whereInput = (name) => `_and: [${name}]\n_not: [${name}]\n_or: [${name}]`
 
-const validateFields = (fieldDefinitions) => {
-    Object.entries(fieldDefinitions).forEach(([fieldName, { type }]) => {
-        if (!type) {
+const getFilterType = ({ type, enumValues, filterType }) => {
+    if (filterType) {
+        return filterType
+    }
+
+    if (enumValues && enumValues.length) {
+        return `${type}EnumFilter`
+    }
+
+    return `${type}Filter`
+}
+
+const processFields = (fieldDefinitions) =>
+    mapValues(fieldDefinitions, (field, fieldName) => {
+        if (!field.type) {
             throw `${fieldName} has no type specified.`
         }
+
+        return {
+            ...field,
+            filterType: getFilterType(field),
+        }
     })
-}
 
 export const createModelSDL = (modelName, fieldDefinitions) => {
     const modelFields = Object.entries(fieldDefinitions).map(
@@ -50,14 +67,12 @@ const createWhereSDL = (queryName, fieldDefinitions) => {
             if (createFilter) {
                 schemaDoc = `${schemaDoc ? `# ${schemaDoc}\n` : ""}`
 
-                let finalFilterType = filterType ? filterType : `${type}Filter`
                 // special case enums, need to create the enum filter definition
-                if (finalFilterType === filters.EnumFilter) {
-                    finalFilterType = `${type}EnumFilter`
-                    enums.push(enumFilterType(finalFilterType, type))
+                if (filterType.endsWith("EnumFilter")) {
+                    enums.push(enumFilterType(filterType, type))
                 }
 
-                queryWhere.push(`${schemaDoc}${fieldName}: ${finalFilterType}`)
+                queryWhere.push(`${schemaDoc}${fieldName}: ${filterType}`)
             }
         }
     )
@@ -110,10 +125,6 @@ const createQuerySDL = (modelName, queryName, queryParameters) => {
 }
 
 const _getSearchFunc = ({ type, filterType }) => {
-    if (!filterType) {
-        filterType = `${type}Filter`
-    }
-
     if (filterType === filters.IDFilter) {
         if (type === types.Int) {
             return searchNumeric
@@ -124,7 +135,7 @@ const _getSearchFunc = ({ type, filterType }) => {
         return searchNumeric
     } else if (filterType === filters.BooleanFilter) {
         return searchBoolean
-    } else if (filterType === filters.StringFilter || filterType === filters.EnumFilter) {
+    } else if (filterType === filters.StringFilter || filterType.endsWith("EnumFilter")) {
         return searchString
     } else {
         console.warn("UNHANDLED FILTER: ", { type, filterType })
@@ -171,7 +182,7 @@ const createMongoSort = (orderByParams = [], fieldDefinitions = {}) => {
 produces SDL for a model, including both the model and the query
 a field has shape: {
     type,
-    required = false,
+    required = true,
     schemaDoc,
     filterType,
     createFilter = true,
@@ -185,7 +196,7 @@ export const createModel = (
     // global options
     { queryParameters } = {}
 ) => {
-    validateFields(fieldDefinitions)
+    fieldDefinitions = processFields(fieldDefinitions)
 
     const modelSDL = createModelSDL(modelName, fieldDefinitions)
     const whereSDL = createWhereSDL(queryName, fieldDefinitions)
@@ -201,6 +212,8 @@ export const createMongoResolver = (
     fieldDefinitions,
     defaultSort = {}
 ) => {
+    fieldDefinitions = processFields(fieldDefinitions)
+
     const mongoSort = createMongoSort(searchParams["orderBy"], fieldDefinitions)
 
     const ret = [

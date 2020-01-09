@@ -58,28 +58,17 @@ export const searchWhereRecursive = (searchParams, searchFunc) => {
         return {}
     }
 
-    const { _or, _and, _not, ...rest } = searchParams
-    const queries = [searchFunc(rest)]
+    const queries = [searchFunc(searchParams)]
 
     // handle special mongodb operators
-    if (!isEmpty(_or)) {
-        queries.push({
-            $or: _or.map((v) => searchWhereRecursive(v, searchFunc)),
-        })
-    }
-
-    if (!isEmpty(_and)) {
-        queries.push({
-            $and: _and.map((v) => searchWhereRecursive(v, searchFunc)),
-        })
-    }
-
-    // $not is not a mongodb top level operator, need to wrap with $and
-    if (!isEmpty(_not)) {
-        queries.push({
-            $nor: _not.map((v) => searchWhereRecursive(v, searchFunc)),
-        })
-    }
+    const logicalOps = { _or: "$or", _and: "$and", _not: "$nor" }
+    Object.entries(logicalOps).forEach(([op, mongoOp]) => {
+        if (op in searchParams) {
+            queries.push({
+                [mongoOp]: searchParams[op].map((v) => searchWhereRecursive(v, searchFunc)),
+            })
+        }
+    })
 
     return mergeMongoQueries(...queries)
 }
